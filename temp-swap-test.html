@@ -54,7 +54,7 @@
 	}
 
 	function callback(e) {
-		var sourceBuffer = mediaSource.addSourceBuffer('video/mp4;codecs="avc1.64001f"');
+		var sourceBuffer = mediaSource.addSourceBuffer('video/mp4;codecs="avc1.4D4028"');
 		sourceBuffer.mode = 'sequence';
 		
 		sourceBuffer.addEventListener('updatestart', function(e) { console.log('updatestart: ' + mediaSource.readyState); });
