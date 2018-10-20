@@ -1,0 +1,36 @@
+{
+	"version": {
+		"major": 0,
+		"minor": 0,
+		"patch": 1
+	},
+	"metadata": {
+		"title": "Test eAVDF - Temp Swapping Test"
+	},
+	"tracks": {
+		"video": [
+			{
+				"name": "mix-1",
+				"format": "video/mp2t",
+				"segments": [
+					{
+						"length": 5,
+						"url": "segments/main-1/001.ts"
+					},
+					{
+						"length": 5,
+						"url": "segments/secondary-2/002.ts"
+					},
+					{
+						"length": 5,
+						"url": "segments/secondary-3/003.ts"
+					},
+					{
+						"length": 5,
+						"url": "segments/secondary-4/004.ts"
+					}
+				]
+			}
+		]
+	}
+}
