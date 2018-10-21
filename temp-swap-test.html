@@ -9,9 +9,10 @@
   <script src="mux.js"></script>
   
   <script>
-    var chunks = ['segments/main-1/001.ts', 'segments/secondary-2/002.ts', 'segments/secondary-3/003.ts', 'segments/secondary-4/004.ts']
+    var chunks = ['segments/main-1/001.ts', 'segments/secondary-2/002.ts', 'segments/secondary-3/003.ts', 'segments/secondary-4/004.ts'];
 	var video = document.getElementById('my-video');
 	var currentChunk = 0;
+	var muxBuffer = []
 
 	if (!window.MediaSource) {
 		alert('MediaSource API is not available');
@@ -21,51 +22,77 @@
 
 	video.src = window.URL.createObjectURL(mediaSource);
 	
-	function parseChunk(chunk, sourceBuffer) {
-		var transmuxer = new muxjs.mp4.Transmuxer({
-			'keepOriginalTimestamps': true
-		});
+	video.addEventListener('error', function(event) {
+	  console.log('Error Message: ' + video.error.message);
+	});
+	
+	var combineBuffers = function(buffer1, buffer2) {
+		var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+		tmp.set(new Uint8Array(buffer1), 0);
+		tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+		return tmp.buffer;
+	};
+	
+	var transmuxer = new muxjs.mp4.Transmuxer();
+	var transmuxerHasInit = false;
+	
+	
 		
-		transmuxer.on('data', function (segment) {
-			sourceBuffer.appendBuffer(segment.data.buffer);
-		});
+	var appendNewSegment = function(chunk, sourceBuffer, segNum) {
+		if (!transmuxerHasInit) {
+			transmuxer.on('data', function (segment) {
+				if (sourceBuffer.updating) {
+					if (segNum === 0) {
+						muxBuffer.push(combineBuffers(segment.initSegment.buffer, segment.data.buffer));
+					} else {
+						muxBuffer.push(segment.data.buffer);
+					}
+				} else {
+					console.log(segment);
+					if (segNum === 0) {
+						sourceBuffer.appendBuffer(combineBuffers(segment.initSegment.buffer, segment.data.buffer));
+					} else {
+						sourceBuffer.appendBuffer(segment.data.buffer);
+					}
+				}
+			});
+			transmuxerHasInit = true;
+		}
+		
+		//console.log(chunk);
 
 		transmuxer.push(chunk);
 		transmuxer.flush();
 			
-		console.log('Appending chunk: ' + i);
-		if (i === chunks.length - 1) {
-			sourceBuffer.addEventListener('updateend', function() {
-				if (mediaSource.readyState === 'open') {
-					console.log('end');
-					mediaSource.endOfStream();
-				}
-			});
-		} else {
-			if (video.paused) {
-				console.log('play?');
-				video.play(); // Start playing after 1st chunk is appended.
-			}
-		}
+		console.log('Appending chunk: ' + currentChunk);
+		currentChunk++;
 		
-		if (i < chunks.length) {
-			GET(chunks[i+1], parseChunk, sourceBuffer);
+		if (currentChunk < chunks.length) {
+			GET(chunks[currentChunk], sourceBuffer, currentChunk);
 		}
 	}
 
 	function callback(e) {
-		var sourceBuffer = mediaSource.addSourceBuffer('video/mp4;codecs="avc1.4D4028"');
-		sourceBuffer.mode = 'sequence';
-		
+		console.log('mediaSource readyState: ' + this.readyState);
+		var sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="mp4a.40.5,avc1.4d0028"');
+	
 		sourceBuffer.addEventListener('updatestart', function(e) { console.log('updatestart: ' + mediaSource.readyState); });
 		sourceBuffer.addEventListener('update', function(e) { console.log('update: ' + mediaSource.readyState); });
-		sourceBuffer.addEventListener('updateend', function(e) { console.log('updateend: ' + mediaSource.readyState); });
 		sourceBuffer.addEventListener('error', function(e) { console.log('error: ' + mediaSource.readyState); });
 		sourceBuffer.addEventListener('abort', function(e) { console.log('abort: ' + mediaSource.readyState); });
 		
-		console.log('mediaSource readyState: ' + this.readyState);
+		sourceBuffer.addEventListener('updateend', function() {
+			console.log('updateend: ' + mediaSource.readyState);
+			if (currentChunk < chunks.length && muxBuffer.length > 0 && !sourceBuffer.updating) {
+				sourceBuffer.appendBuffer(muxBuffer.shift());
+			} else {
+				if (currentChunk === chunks.length) {
+					mediaSource.endOfStream();
+				}
+			}
+		});
 		
-		GET(chunks[0], parseChunk, sourceBuffer);
+		GET(chunks[0], sourceBuffer, 0);
 	}
 
 	mediaSource.addEventListener('sourceopen', callback);
@@ -79,7 +106,7 @@
 		console.log('mediaSource readyState: ' + this.readyState);
 	}, false);
 
-	function GET(url, callback, sourceBuffer) {
+	var GET = function(url, sourceBuffer, segNum) {
 		var xhr = new XMLHttpRequest();
 		xhr.open('GET', url, true);
 		xhr.responseType = 'arraybuffer';
@@ -89,8 +116,9 @@
 			if (xhr.status != 200) {
 				alert("Unexpected status code " + xhr.status + " for " + url);
 				return false;
+			} else {
+				appendNewSegment(new Uint8Array(xhr.response), sourceBuffer, segNum);
 			}
-			callback(new Uint8Array(xhr.response), sourceBuffer);
 		};
 	}
   </script>
