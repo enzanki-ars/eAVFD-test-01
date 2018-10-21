@@ -21,26 +21,24 @@
 	var mediaSource = new MediaSource();
 
 	video.src = window.URL.createObjectURL(mediaSource);
-	
+
 	video.addEventListener('error', function(event) {
-	  console.log('Error Message: ' + video.error.message);
+		console.log('Error Message: ' + video.error.message);
 	});
-	
+
 	var combineBuffers = function(buffer1, buffer2) {
 		var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
 		tmp.set(new Uint8Array(buffer1), 0);
 		tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
 		return tmp.buffer;
 	};
-	
+
 	var transmuxer = new muxjs.mp4.Transmuxer();
 	var transmuxerHasInit = false;
-	
-	
-		
+
 	var appendNewSegment = function(chunk, sourceBuffer, segNum) {
 		if (!transmuxerHasInit) {
-			transmuxer.on('data', function (segment) {
+			transmuxer.on('data', function(segment) {
 				if (sourceBuffer.updating) {
 					if (segNum === 0) {
 						muxBuffer.push(combineBuffers(segment.initSegment.buffer, segment.data.buffer));
@@ -58,15 +56,15 @@
 			});
 			transmuxerHasInit = true;
 		}
-		
+
 		//console.log(chunk);
 
 		transmuxer.push(chunk);
 		transmuxer.flush();
-			
+
 		console.log('Appending chunk: ' + currentChunk);
 		currentChunk++;
-		
+
 		if (currentChunk < chunks.length) {
 			GET(chunks[currentChunk], sourceBuffer, currentChunk);
 		}
@@ -91,7 +89,7 @@
 				}
 			}
 		});
-		
+
 		GET(chunks[0], sourceBuffer, 0);
 	}
 
@@ -120,6 +118,6 @@
 				appendNewSegment(new Uint8Array(xhr.response), sourceBuffer, segNum);
 			}
 		};
-	}
+}
   </script>
 </body>
