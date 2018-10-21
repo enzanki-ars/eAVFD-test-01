@@ -83,7 +83,7 @@
 		
 		sourceBuffer.addEventListener('updateend', function() {
 			console.log('updateend: ' + mediaSource.readyState);
-			if (currentChunk < chunks.length && muxBuffer.length > 0 && !sourceBuffer.updating) {
+			if (muxBuffer.length) {
 				sourceBuffer.appendBuffer(muxBuffer.shift());
 			} else {
 				if (currentChunk === chunks.length) {
