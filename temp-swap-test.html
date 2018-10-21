@@ -1,16 +1,20 @@
 <head>
+	<link href="https://unpkg.com/video.js@6.12.0/dist/video-js.min.css" rel="stylesheet">
 </head>
 
 <body>
-  <video id="my-video" width="960" height="400" controls>
+  <video id="my-video" class="video-js vjs-default-skin" width="960" height="400" controls data-setup='{}'>
     
   </video>
+  
+  <script src="https://unpkg.com/video.js@6.12.0/dist/video.min.js"></script>
+  <script src="videojs-contrib-media-sources.min.js"></script>
   
   <script src="mux.js"></script>
   
   <script>
     var chunks = ['segments/main-1/001.ts', 'segments/secondary-2/002.ts', 'segments/secondary-3/003.ts', 'segments/secondary-4/004.ts'];
-	var video = document.getElementById('my-video');
+	var video = videojs('my-video');
 	var currentChunk = 0;
 	var muxBuffer = []
 
@@ -18,13 +22,17 @@
 		alert('MediaSource API is not available');
 	}
 
-	var mediaSource = new MediaSource();
+	var mediaSource = new videojs.MediaSource({ mode: 'html5' });
 
-	video.src = window.URL.createObjectURL(mediaSource);
-
-	video.addEventListener('error', function(event) {
-		console.log('Error Message: ' + video.error.message);
+	video.src({
+		src: videojs.URL.createObjectURL(mediaSource),
+		type: "video/mp4"
 	});
+	//video.src = videojs.URL.createObjectURL(mediaSource);
+
+	//video.addEventListener('error', function(event) {
+	//	console.log('Error Message: ' + video.error.message);
+	//});
 
 	var combineBuffers = function(buffer1, buffer2) {
 		var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
