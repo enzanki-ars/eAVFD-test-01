@@ -74,6 +74,8 @@
 		console.log('mediaSource readyState: ' + this.readyState);
 		var sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="mp4a.40.5,avc1.4d0028"');
 	
+		sourceBuffer.mode = 'sequence';
+	
 		sourceBuffer.addEventListener('updatestart', function(e) { console.log('updatestart: ' + mediaSource.readyState); });
 		sourceBuffer.addEventListener('update', function(e) { console.log('update: ' + mediaSource.readyState); });
 		sourceBuffer.addEventListener('error', function(e) { console.log('error: ' + mediaSource.readyState); });
@@ -85,6 +87,7 @@
 				sourceBuffer.appendBuffer(muxBuffer.shift());
 			} else {
 				if (currentChunk === chunks.length) {
+					console.log('ending at: ' + currentChunk);
 					mediaSource.endOfStream();
 				}
 			}
